@@ -1,5 +1,7 @@
 # Word Slot Machine
 
+<img width="1696" height="977" alt="Image" src="https://github.com/user-attachments/assets/793fd281-75f2-4bc9-85ce-5b1ba5fed1a8" />
+
 Word Slot Machine is a classroom-friendly vocabulary game that helps students practice sentence building. Students choose one, two, or three word slots, select a grammatical category for each active slot, spin for random words, and then use those words in a sentence.
 
 The app is intentionally simple for students, but the implementation has a real data pipeline behind it: a 5,000-word vocabulary list is categorized with WordNet plus curated grammar rules, stored in a normalized SQLite database, and served through a small Flask API.
