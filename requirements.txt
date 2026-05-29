@@ -1,7 +1,3 @@
 Flask>=3.0
 nltk>=3.8
-<<<<<<< HEAD
 gunicorn
-=======
-gunicorn
->>>>>>> f439a65 (Favicon Addition)
