@@ -282,6 +282,52 @@
   .used-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
   .used-btn:focus-visible { outline: 4px solid rgba(48,136,199,.45); outline-offset: 3px; }
 
+  .point-value {
+    min-height: 22px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--blue-deep);
+    text-shadow: 1px 1px 0 rgba(255,255,255,.9);
+  }
+  .point-value[hidden] { display: none; }
+  .point-value summary {
+    cursor: pointer;
+    list-style: none;
+  }
+  .point-value summary::-webkit-details-marker { display: none; }
+  .point-value summary::after {
+    content: " ▾";
+    font-size: 13px;
+  }
+  .point-value[open] summary::after { content: " ▴"; }
+  .point-list {
+    display: grid;
+    gap: 5px;
+    margin: 8px auto 0;
+    padding: 8px 10px;
+    max-width: 260px;
+    text-align: left;
+    list-style: none;
+    color: var(--ink);
+    background: rgba(255,255,255,.72);
+    border: 2px solid rgba(48,136,199,.18);
+    border-radius: 14px;
+    box-shadow: 0 4px 10px rgba(44,62,80,.08);
+    text-shadow: none;
+  }
+  .point-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+    line-height: 1.25;
+  }
+  .point-list span:last-child {
+    flex: 0 0 auto;
+    color: var(--blue-deep);
+  }
+
   .spin-row { display: flex; justify-content: center; margin-top: 30px; }
   .spin-btn {
     position: relative;
@@ -452,7 +498,7 @@
         <span class="score-label">Score</span>
         <span class="score-num" id="score" aria-live="polite">0</span>
       </div>
-      <span class="score-help">+1 for each word you mark as used</span>
+      <span class="score-help">Add each word's points when you mark it used</span>
       <button class="reset-btn" id="resetBtn">Reset</button>
     </section>
 
@@ -494,7 +540,7 @@
     catById: {},       // id -> category object
     categoryOptionsHtml: "",
     spinning: false,
-    reelNodes: [],     // {slot, categoryField, categorySelect, reel, text, usedBtn}
+    reelNodes: [],     // {slot, categoryField, categorySelect, reel, text, usedBtn, points, pointsSummary, pointsList}
   };
 
   // ---- build the three reel slots once ----
@@ -533,9 +579,18 @@
       usedBtn.disabled = true;
       usedBtn.addEventListener("click", () => toggleUsed(i));
 
-      slot.append(categoryField, reel, usedBtn);
+      const points = document.createElement("details");
+      points.className = "point-value";
+      points.setAttribute("aria-live", "polite");
+      points.hidden = true;
+      const pointsSummary = document.createElement("summary");
+      const pointsList = document.createElement("ul");
+      pointsList.className = "point-list";
+      points.append(pointsSummary, pointsList);
+
+      slot.append(categoryField, reel, usedBtn, points);
       els.reels.appendChild(slot);
-      state.reelNodes.push({ slot, categoryField, categorySelect, reel, text, usedBtn });
+      state.reelNodes.push({ slot, categoryField, categorySelect, reel, text, usedBtn, points, pointsSummary, pointsList });
     }
     applyReelCount();
   }
@@ -548,6 +603,7 @@
       n.categorySelect.disabled = !active || state.spinning || !state.categoryOptionsHtml;
       if (!active) {
         n.text.textContent = "—";
+        resetPointBreakdown(n);
         resetUsedBtn(n.usedBtn);
         n.usedBtn.style.display = "none";
       } else {
@@ -670,6 +726,7 @@
     const intervals = active.map(n => {
       n.reel.classList.remove("landed");
       n.reel.classList.add("spinning");
+      resetPointBreakdown(n);
       resetUsedBtn(n.usedBtn);
       return setInterval(() => {
         n.text.textContent = FLASH[(Math.random() * FLASH.length) | 0];
@@ -699,8 +756,10 @@
           n.usedBtn.disabled = false;
           n.usedBtn.dataset.points = w.points;
           n.usedBtn.dataset.used = "0";
+          renderPointBreakdown(n, w.scoring || { total: w.points, rules: [] });
         } else {
           n.text.textContent = "—";
+          resetPointBreakdown(n);
         }
         // last reel finishes -> re-enable
         if (i === active.length - 1) {
@@ -711,6 +770,39 @@
         }
       }, 900 + i * 420);
     });
+  }
+
+  function resetPointBreakdown(n) {
+    n.points.hidden = true;
+    n.points.open = false;
+    n.pointsSummary.textContent = "";
+    n.pointsList.innerHTML = "";
+  }
+
+  function renderPointBreakdown(n, scoring) {
+    const total = scoring.total || 0;
+    n.points.hidden = false;
+    n.points.open = false;
+    n.pointsSummary.textContent = `${total} ${total === 1 ? "point" : "points"} · Show calculation`;
+    n.pointsList.innerHTML = "";
+
+    const base = scoring.base;
+    if (base) {
+      n.pointsList.appendChild(pointLine(base.label, base.points, base.match));
+    }
+    (scoring.rules || []).forEach(rule => {
+      n.pointsList.appendChild(pointLine(rule.label, rule.points, rule.match));
+    });
+  }
+
+  function pointLine(label, points, match) {
+    const li = document.createElement("li");
+    const desc = document.createElement("span");
+    desc.textContent = match ? `${label} (${match})` : label;
+    const value = document.createElement("span");
+    value.textContent = `+${points}`;
+    li.append(desc, value);
+    return li;
   }
 
   function toggleUsed(i) {

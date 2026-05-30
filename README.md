@@ -14,7 +14,8 @@ The app is intentionally simple for students at Wuzzals, but the implementation 
 - Supports subcategories such as concrete nouns, abstract nouns, countable nouns, descriptive adjectives, time adverbs, frequency adverbs, and more.
 - Spins random words from the selected category for each slot.
 - Lets students mark words they used in a sentence.
-- Tracks a simple score.
+- Scores each used word by its letter count plus phonics-pattern bonuses.
+- Displays each word's point value and an expandable scoring calculation below the "Used in sentence" button.
 - Keeps the UI focused and student-friendly by hiding technical category metadata after the spin.
 
 ## Why This Project Is Interesting
@@ -148,7 +149,15 @@ Example:
 
 This asks the backend for one noun, one verb, and one adjective.
 
-### 5. Random Word Selection
+### 5. Point Calculation
+
+Each word starts with one point per letter. The app then applies phonics-pattern bonuses such as CVC, CVCC, silent-e endings, vowel teams, r-controlled patterns, and ending patterns.
+
+When multiple rules match without overlapping, their points are added together. When rules overlap, the scorer keeps the higher-value or more specific match. This prevents a smaller rule from double-counting inside a larger rule, such as `CH` inside `TCH`.
+
+The API returns both the final point total and a scoring breakdown so the frontend can show students exactly how the value was calculated.
+
+### 6. Random Word Selection
 
 Random selection happens in SQLite using:
 
@@ -158,7 +167,7 @@ ORDER BY RANDOM()
 
 For multi-slot spins, the frontend sends one `category` parameter per active slot. The backend returns words in slot order. It also tries to avoid duplicate word IDs within a spin when possible.
 
-### 6. Frontend Flow
+### 7. Frontend Flow
 
 The frontend is contained mainly in `templates/index.html`.
 
@@ -180,6 +189,7 @@ On page load:
 ├── app.py                  # Flask app and API routes
 ├── build_data.py           # Builds words.db from wordbase + WordNet + curated lists
 ├── curated.py              # Hand-curated grammar lists
+├── scoring.py              # Letter-count and phonics-rule point calculation
 ├── requirements.txt        # Python dependencies
 ├── schema.sql              # SQLite schema
 ├── wordbase.txt            # Source vocabulary list
@@ -264,6 +274,7 @@ curl "http://127.0.0.1:5000/api/spin?category=all&count=3"
 - API supports repeated `category` query parameters for multi-category spins.
 - Responsive UI designed for classroom use on laptops, tablets, and projectors.
 - Student-facing interface avoids overwhelming category metadata.
+- Word scores are transparent: students can expand a calculation showing letter points and matched phonics rules.
 
 ## Potential Future Improvements
 

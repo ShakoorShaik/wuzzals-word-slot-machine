@@ -17,6 +17,8 @@ import sqlite3
 
 from flask import Flask, g, jsonify, render_template, request
 
+from scoring import score_word
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(HERE, "words.db")
 
@@ -152,10 +154,12 @@ def spin():
             """,
             (r["id"],),
         ).fetchall()
+        scoring = score_word(r["display_text"])
         words.append({
             "id": r["id"],
             "text": r["display_text"],
-            "points": r["points"],
+            "points": scoring["total"],
+            "scoring": scoring,
             "categories": [x["display_name"] for x in labels],
         })
 

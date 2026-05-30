@@ -24,6 +24,7 @@ import nltk
 from nltk.corpus import wordnet as wn
 
 import curated
+from scoring import point_value
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(HERE, "words.db")
@@ -256,8 +257,8 @@ def build():
     for text, (cats, is_proper) in entries.items():
         display = text.capitalize() if is_proper else text
         cur = conn.execute(
-            "INSERT INTO words (text, display_text, is_proper, points) VALUES (?,?,?,1)",
-            (text, display, 1 if is_proper else 0),
+            "INSERT INTO words (text, display_text, is_proper, points) VALUES (?,?,?,?)",
+            (text, display, 1 if is_proper else 0, point_value(display)),
         )
         wid = cur.lastrowid
         for c in cats:
